@@ -3,6 +3,7 @@
 #include "pros/abstract_motor.hpp"
 #include "pros/adi.hpp"
 #include "pros/motors.hpp" // IWYU pragma: keep
+#include "pros/rtos.hpp"
 
 //Autonomous paths
 ASSET(Auto_txt);
@@ -23,7 +24,7 @@ pros::MotorGroup intake({-15, 16}, pros::v5::MotorGears::blue);
 
 //Pneumatics
 pros::adi::DigitalOut trapdoor('G');
-pros::adi::DigitalOut ballstop('B');
+pros::adi::DigitalOut ballstop('F');
 pros::adi::DigitalOut tongue('H');
 
 // Drivetrain settings
@@ -101,13 +102,28 @@ void initialize() {
 void autonomous() {
     chassis.setPose(55.648, 17.604, 270);
     intake.move(127);
-    chassis.moveToPose(55.648, 17.604, 270, 3000);
-    chassis.moveToPose(24.068, 22.29, 270, 3000);
-    chassis.moveToPoint(7.744, 23.05, 3000);
-    chassis.turnToPoint(3.697, 37.9, 2000);
-    chassis.moveToPose(3.697, 37.9, -30, 3000, {.maxSpeed = 60});
-    chassis.moveToPose(23, 23, 225, 4000, {.forwards = false});
-    chassis.moveToPose(15, 15, 225, 1500);
+    chassis.moveToPose(55.648, 17.604, 270, 6000, {.minSpeed = 60});
+    chassis.moveToPose(24.068, 22.29, 270, 6000, {.minSpeed = 60});
+    chassis.moveToPose(6, 40, -30, 4000, {.maxSpeed = 80});
+    pros::delay(4000);
+    tongue.set_value(true);
+    pros::delay(1000);
+    chassis.turnToHeading(-60, 1000, { .minSpeed = 80});
+    chassis.moveToPoint(20, 25, 3000, {.forwards = false});
+    pros::delay(2000);
+    tongue.set_value(false);
+    chassis.turnToHeading(-135, 2000);
+    chassis.moveToPoint(13, 15, 2000, { .minSpeed = 80});
+    intake.move(-127);
+    chassis.turnToHeading(-135, 2000);
+    pros::delay(1500);
+    intake.brake();
+    chassis.moveToPoint(40, 40, 5000, {.forwards = false});
+
+
+    
+    // chassis.moveToPose(23, 23, 225, 4000, {.forwards = false});
+    // chassis.moveToPose(15, 15, 225, 1500);
 }
 
 void opcontrol() {
@@ -130,6 +146,9 @@ void opcontrol() {
         }
         else if (controllerSecondary.get_digital(pros::E_CONTROLLER_DIGITAL_R2))   {
             intake.move(-127);
+        }
+        else {
+            intake.brake();
         }
 
 
